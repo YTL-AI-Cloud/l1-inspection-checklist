@@ -404,6 +404,70 @@
   .remarks-save-btn { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
   .remarks-save-btn:hover { background: #0757ba; border-color: #0757ba; color: #fff; }
 
+  /* ── PHOTO BUTTON ── */
+  .photo-btn {
+    display: block;
+    margin-top: 5px;
+    background: transparent;
+    border: 1px dashed var(--border);
+    border-radius: 4px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 3px 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    text-align: left;
+    width: 100%;
+  }
+  .photo-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); border-style: solid; }
+  .photo-btn.has-photos { border-style: solid; border-color: #1a7f37; color: #1a7f37; }
+  .photo-btn.has-photos:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+
+  /* ── PHOTO MODAL ── */
+  #photo-modal .modal { width: 560px; }
+  .photo-grid { display: flex; flex-wrap: wrap; gap: 10px; min-height: 80px; margin-bottom: 14px; }
+  .photo-grid:empty::after { content: 'No photos yet.'; font-size: 12px; color: var(--text-dim); font-style: italic; align-self: center; }
+  .photo-thumb-wrap {
+    position: relative; width: 110px; height: 110px;
+    border-radius: 6px; overflow: hidden;
+    border: 1px solid var(--border); cursor: pointer; flex-shrink: 0;
+  }
+  .photo-thumb-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .photo-thumb-wrap:hover img { opacity: 0.85; }
+  .photo-del-btn {
+    position: absolute; top: 4px; right: 4px;
+    background: rgba(0,0,0,0.55); color: #fff;
+    border: none; border-radius: 50%;
+    width: 22px; height: 22px; font-size: 13px; line-height: 1;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .photo-del-btn:hover { background: var(--fail); }
+  .photo-add-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .photo-size-info { font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
+  .btn.photo-add { background: var(--surface-2); border-color: #1a7f37; color: #1a7f37; font-weight: 600; }
+  .btn.photo-add:hover { background: rgba(26,127,55,0.08); }
+  .btn.photo-add:disabled { opacity: 0.45; cursor: not-allowed; border-style: dashed; }
+
+  /* ── FULL-SIZE PHOTO VIEWER ── */
+  .photo-viewer {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.88); z-index: 300;
+    align-items: center; justify-content: center;
+  }
+  .photo-viewer.open { display: flex; }
+  .photo-viewer img { max-width: 92vw; max-height: 92vh; border-radius: 4px; box-shadow: 0 8px 40px rgba(0,0,0,0.5); }
+  .photo-viewer-close {
+    position: absolute; top: 18px; right: 20px;
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #fff; font-size: 20px; cursor: pointer;
+    border-radius: 50%; width: 38px; height: 38px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .photo-viewer-close:hover { background: rgba(255,255,255,0.25); }
+
   /* ── ESCALATION TABLE ── */
   .escalation-table {
     width: 100%;
@@ -851,6 +915,37 @@
   </div>
 </div>
 
+<!-- PHOTO MODAL -->
+<div class="modal-overlay" id="photo-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:10px;min-width:0">
+        <h3 id="photo-modal-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Photos</h3>
+        <span class="modal-badge" id="photo-modal-badge"></span>
+      </div>
+      <button class="modal-close" onclick="closePhotoModal()">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <p>Attach up to <strong>3 photos</strong> as evidence. Photos are compressed automatically. Tap a thumbnail to view full size.</p>
+      <div class="photo-grid" id="photo-grid"></div>
+      <div class="photo-add-row">
+        <button class="btn photo-add" id="photo-add-btn" onclick="document.getElementById('photo-file-input').click()">📷 Add Photo</button>
+        <span class="photo-size-info" id="photo-size-info"></span>
+      </div>
+      <input type="file" id="photo-file-input" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoFile(event)">
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closePhotoModal()">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- FULL-SIZE PHOTO VIEWER -->
+<div class="photo-viewer" id="photo-viewer" onclick="closePhotoViewer()">
+  <button class="photo-viewer-close" onclick="closePhotoViewer()">&#x2715;</button>
+  <img id="photo-viewer-img" src="" alt="">
+</div>
+
 <!-- MAIN -->
 <div class="main">
 
@@ -1199,6 +1294,116 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) saveRemark();
 });
 
+// ── Photo storage (keyed by item ID, array of compressed data URLs) ──
+const PHOTOS = {};
+let _photoItemId = null;
+const MAX_PHOTOS = 3;
+const PHOTO_MAX_PX = 1200;
+const PHOTO_QUALITY = 0.72;
+
+function openPhotoModal(itemId, itemDesc) {
+  _photoItemId = itemId;
+  document.getElementById('photo-modal-title').textContent = itemDesc || `Item ${itemId}`;
+  document.getElementById('photo-modal-badge').textContent = itemId;
+  _renderPhotoGrid(itemId);
+  document.getElementById('photo-modal').classList.add('open');
+}
+function closePhotoModal() {
+  document.getElementById('photo-modal').classList.remove('open');
+  document.getElementById('photo-file-input').value = '';
+  _photoItemId = null;
+}
+document.getElementById('photo-modal').addEventListener('click', function(e) {
+  if (e.target === this) closePhotoModal();
+});
+
+function _renderPhotoGrid(itemId) {
+  const photos = PHOTOS[itemId] || [];
+  const grid = document.getElementById('photo-grid');
+  grid.innerHTML = photos.map((src, i) => `
+    <div class="photo-thumb-wrap" onclick="viewPhoto('${itemId}',${i})">
+      <img src="${src}" alt="Photo ${i+1}">
+      <button class="photo-del-btn" onclick="event.stopPropagation();deletePhoto('${itemId}',${i})" title="Delete">&#x2715;</button>
+    </div>
+  `).join('');
+  const atLimit = photos.length >= MAX_PHOTOS;
+  const addBtn  = document.getElementById('photo-add-btn');
+  addBtn.disabled = atLimit;
+  addBtn.textContent = atLimit ? `📷 Max ${MAX_PHOTOS} reached` : '📷 Add Photo';
+  document.getElementById('photo-size-info').textContent = _sizeLabel(itemId);
+}
+
+function _sizeLabel(itemId) {
+  const photos = PHOTOS[itemId] || [];
+  if (!photos.length) return '';
+  const bytes = photos.reduce((s, d) => s + Math.round(d.length * 0.75), 0);
+  return `${photos.length}/${MAX_PHOTOS} · ~${(bytes/1024).toFixed(0)} KB`;
+}
+
+function handlePhotoFile(e) {
+  const file = e.target.files[0];
+  if (!file || !_photoItemId) return;
+  _compressImage(file).then(dataUrl => {
+    if (!PHOTOS[_photoItemId]) PHOTOS[_photoItemId] = [];
+    if (PHOTOS[_photoItemId].length >= MAX_PHOTOS) return;
+    PHOTOS[_photoItemId].push(dataUrl);
+    _renderPhotoGrid(_photoItemId);
+    _updatePhotoBtn(_photoItemId);
+    document.getElementById('photo-file-input').value = '';
+  });
+}
+
+function deletePhoto(itemId, index) {
+  if (!PHOTOS[itemId]) return;
+  PHOTOS[itemId].splice(index, 1);
+  if (!PHOTOS[itemId].length) delete PHOTOS[itemId];
+  _renderPhotoGrid(itemId);
+  _updatePhotoBtn(itemId);
+}
+
+function _updatePhotoBtn(itemId) {
+  const btn = document.getElementById(`photo-btn-${itemId}`);
+  if (!btn) return;
+  const count = (PHOTOS[itemId] || []).length;
+  btn.querySelector('.photo-count').textContent = count;
+  btn.classList.toggle('has-photos', count > 0);
+}
+
+function _compressImage(file) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (w > PHOTO_MAX_PX || h > PHOTO_MAX_PX) {
+          if (w > h) { h = Math.round(h * PHOTO_MAX_PX / w); w = PHOTO_MAX_PX; }
+          else       { w = Math.round(w * PHOTO_MAX_PX / h); h = PHOTO_MAX_PX; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', PHOTO_QUALITY));
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function viewPhoto(itemId, index) {
+  const src = (PHOTOS[itemId] || [])[index];
+  if (!src) return;
+  document.getElementById('photo-viewer-img').src = src;
+  document.getElementById('photo-viewer').classList.add('open');
+}
+function closePhotoViewer() {
+  document.getElementById('photo-viewer').classList.remove('open');
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closePhotoViewer(); }
+});
+
 // Build escalation table
 const escBody = document.getElementById('escalation-body');
 ESCALATION.forEach(e => {
@@ -1232,7 +1437,10 @@ SECTIONS.forEach(sec => {
           <label class="radio-label na"><input type="radio" name="status-${item.id}" value="na" onchange="updateSection('${sec.num}'); updateProgress()"> N/A</label>
         </div>
       </td>
-      <td><button class="remarks-btn" id="remarks-btn-${item.id}" onclick="openRemarksModal('${item.id}', '${item.desc.replace(/'/g,"\\'")}')">Add remark…</button></td>
+      <td>
+        <button class="remarks-btn" id="remarks-btn-${item.id}" onclick="openRemarksModal('${item.id}', '${item.desc.replace(/'/g,"\\'")}')">Add remark…</button>
+        <button class="photo-btn" id="photo-btn-${item.id}" onclick="openPhotoModal('${item.id}', '${item.desc.replace(/'/g,"\\'")}')">📷 <span class="photo-count">0</span></button>
+      </td>
     </tr>
   `).join('');
 
@@ -1328,6 +1536,8 @@ function clearAll() {
       document.querySelectorAll(`input[name="status-${item.id}"]`).forEach(r => r.checked = false);
       delete REMARKS[item.id];
       _updateRemarkBtn(item.id, '');
+      delete PHOTOS[item.id];
+      _updatePhotoBtn(item.id);
     });
     updateSection(sec.num);
   });
@@ -1429,6 +1639,17 @@ function saveCSV() {
   rows.push(['Reviewed By / Shift Lead',document.getElementById('so-reviewed-by')?.value || '']);
   rows.push(['Reviewer Signature/Date', document.getElementById('so-reviewed-sig')?.value || '']);
   rows.push(['Final Remarks',           document.getElementById('so-remarks')?.value || '']);
+
+  // ── Section 6: Photos
+  const photoEntries = Object.entries(PHOTOS).filter(([,arr]) => arr.length > 0);
+  if (photoEntries.length > 0) {
+    rows.push([]);
+    rows.push(['=== PHOTOS ===']);
+    rows.push(['Item No.', 'Photo Index', 'Data']);
+    photoEntries.forEach(([itemId, photos]) => {
+      photos.forEach((dataUrl, i) => rows.push([itemId, i + 1, dataUrl]));
+    });
+  }
 
   // ── Build CSV string
   const csv = rows.map(row => row.map(csvEscape).join(',')).join('\r\n');
@@ -1535,7 +1756,7 @@ function parseCSV(text) {
   }
 
   const lines = text.split(/\r?\n/);
-  const parsed = { meta: {}, items: {}, handover: {}, signoff: {} };
+  const parsed = { meta: {}, items: {}, handover: {}, signoff: {}, photos: {} };
   let section = null;
 
   for (const line of lines) {
@@ -1547,6 +1768,7 @@ function parseCSV(text) {
     if (trimmed.startsWith('=== SUMMARY'))             { section = 'summary'; continue; }
     if (trimmed.startsWith('=== SHIFT HANDOVER'))      { section = 'handover'; continue; }
     if (trimmed.startsWith('=== FINAL SIGN-OFF'))      { section = 'signoff'; continue; }
+    if (trimmed.startsWith('=== PHOTOS'))              { section = 'photos'; continue; }
 
     const cols = tokeniseRow(trimmed);
 
@@ -1570,6 +1792,15 @@ function parseCSV(text) {
       if (cols[0] === 'Field') continue;
       parsed.signoff[cols[0]] = cols[1] || '';
     }
+    if (section === 'photos') {
+      if (cols[0] === 'Item No.') continue;
+      const itemId = cols[0];
+      const dataUrl = cols[2];
+      if (itemId && dataUrl && dataUrl.startsWith('data:')) {
+        if (!parsed.photos[itemId]) parsed.photos[itemId] = [];
+        parsed.photos[itemId].push(dataUrl);
+      }
+    }
   }
 
   // Validate: must have at least one item
@@ -1578,10 +1809,11 @@ function parseCSV(text) {
 }
 
 function renderPreview(data) {
-  const itemCount = Object.keys(data.items).length;
+  const itemCount    = Object.keys(data.items).length;
   const checkedCount = Object.values(data.items).filter(i => i.status && i.status !== 'NOT CHECKED').length;
   const failCount    = Object.values(data.items).filter(i => i.status === 'FAIL').length;
   const remarkCount  = Object.values(data.items).filter(i => i.remarks).length;
+  const photoCount   = Object.values(data.photos || {}).reduce((s, a) => s + a.length, 0);
 
   const previewEl = document.getElementById('import-preview');
   previewEl.innerHTML = `
@@ -1592,6 +1824,7 @@ function renderPreview(data) {
     <div class="preview-row"><span>Already checked</span><span class="preview-val">${checkedCount} / ${itemCount}</span></div>
     <div class="preview-row"><span>Failures recorded</span><span class="preview-val" style="color:${failCount>0?'#cf222e':'inherit'}">${failCount}</span></div>
     <div class="preview-row"><span>Remarks present</span><span class="preview-val">${remarkCount}</span></div>
+    <div class="preview-row"><span>Photos attached</span><span class="preview-val">${photoCount}</span></div>
   `;
   previewEl.classList.add('visible');
 }
@@ -1637,6 +1870,12 @@ function confirmImport() {
     updateSection(sec.num);
   });
   updateProgress();
+
+  // ── Restore photos
+  Object.entries(data.photos || {}).forEach(([itemId, photos]) => {
+    PHOTOS[itemId] = photos;
+    _updatePhotoBtn(itemId);
+  });
 
   // ── Restore handover
   const hoMap = {
