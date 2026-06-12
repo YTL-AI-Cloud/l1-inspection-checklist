@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>L1 Physical Hardware Inspection Checklist — GB200 Core POD v2</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #f6f8fa;
+    --surface: #ffffff;
+    --surface-2: #f0f3f6;
+    --border: #d0d7de;
+    --border-active: #0969da;
+    --text: #1f2328;
+    --text-muted: #57606a;
+    --text-dim: #afb8c1;
+    --pass: #1a7f37;
+    --fail: #cf222e;
+    --warn: #9a6700;
+    --critical: #cf222e;
+    --major: #9a6700;
+    --accent: #0969da;
+    --accent-glow: rgba(9,105,218,0.08);
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 24px 32px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .header-badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-glow);
+    border: 1px solid rgba(56,139,253,0.3);
+    padding: 3px 8px;
+    border-radius: 3px;
+    margin-bottom: 6px;
+    display: inline-block;
+  }
+  .header h1 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .header h1 span {
+    color: var(--accent);
+  }
+  .header-sub {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+  .progress-bar-wrap {
+    min-width: 220px;
+    text-align: right;
+  }
+  .progress-stats {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .progress-stats span { color: var(--text); font-weight: 500; }
+  .progress-track {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    width: 220px;
+    margin-left: auto;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--pass));
+    border-radius: 2px;
+    transition: width 0.3s ease;
+    width: 0%;
+  }
+
+  /* ── META FORM ── */
+  .meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    margin: 20px 32px;
+  }
+  .meta-cell {
+    background: var(--surface);
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .meta-cell label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+    min-width: 110px;
+  }
+  .meta-cell input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    outline: none;
+    width: 100%;
+    padding: 2px 0;
+    transition: border-color 0.2s;
+  }
+  .meta-cell input:focus { border-color: var(--accent); }
+
+  /* ── PURPOSE BOX ── */
+  .purpose-box {
+    margin: 0 32px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+    padding: 14px 18px;
+  }
+  .purpose-box h3 {
+    font-size: 11px;
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .purpose-box p {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.65;
+  }
+  .purpose-box p + p { margin-top: 6px; }
+
+  /* ── TOOLBAR ── */
+  .toolbar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 0 32px 16px;
+    flex-wrap: wrap;
+  }
+  .btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+  .btn.primary { background: var(--accent-glow); border-color: var(--accent); color: var(--accent); }
+
+  /* ── MAIN CONTENT ── */
+  .main { padding: 0 32px 60px; }
+
+  /* ── SECTION ── */
+  .section {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 8px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .section:has(.item-status input:checked) { border-color: var(--border); }
+  .section.has-fail { border-color: rgba(248,81,73,0.4); }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    background: var(--surface);
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+  }
+  .section-header:hover { background: var(--surface-2); }
+
+  .section-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--accent-glow);
+    border: 1px solid rgba(56,139,253,0.25);
+    width: 28px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    flex: 1;
+  }
+  .section-summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .pill {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 500;
+    border: 1px solid;
+  }
+  .pill-pass { color: var(--pass); border-color: rgba(63,185,80,0.3); background: rgba(63,185,80,0.08); }
+  .pill-fail { color: var(--fail); border-color: rgba(248,81,73,0.3); background: rgba(248,81,73,0.08); }
+  .chevron {
+    width: 16px;
+    height: 16px;
+    color: var(--text-dim);
+    transition: transform 0.2s;
+    flex-shrink: 0;
+  }
+  .section.open .chevron { transform: rotate(90deg); }
+
+  /* ── ITEMS TABLE ── */
+  .section-body { display: none; }
+  .section.open .section-body { display: block; }
+
+  .items-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg);
+  }
+  .items-table th {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-2);
+  }
+  .items-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .items-table tr:last-child td { border-bottom: none; }
+  .items-table tr:hover td { background: var(--surface-2); }
+
+  .item-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    width: 48px;
+  }
+  .item-desc {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  .item-method {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-style: italic;
+    min-width: 160px;
+    max-width: 200px;
+  }
+  .item-status {
+    white-space: nowrap;
+    width: 120px;
+  }
+  .radio-group {
+    display: flex;
+    gap: 6px;
+  }
+  .radio-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .radio-label input[type="radio"] { display: none; }
+  .radio-label.pass:has(input:checked),
+  .radio-label.pass:hover { border-color: var(--pass); color: var(--pass); background: rgba(63,185,80,0.08); }
+  .radio-label.fail:has(input:checked),
+  .radio-label.fail:hover { border-color: var(--fail); color: var(--fail); background: rgba(248,81,73,0.08); }
+
+  /* ── REMARKS BUTTON ── */
+  .remarks-btn {
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed var(--border);
+    color: var(--text-dim);
+    font-family: var(--sans);
+    font-size: 12px;
+    font-style: italic;
+    outline: none;
+    padding: 4px 6px;
+    transition: border-color 0.15s, background 0.15s;
+    min-width: 120px;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 3px 3px 0 0;
+    display: block;
+    line-height: 1.45;
+  }
+  .remarks-btn:hover { border-color: var(--accent); border-bottom-style: solid; background: var(--accent-glow); color: var(--accent); }
+  .remarks-btn.has-remark { color: var(--text); font-style: normal; border-color: var(--text-muted); border-bottom-style: solid; }
+  .remarks-btn.has-remark:hover { border-color: var(--accent); background: var(--accent-glow); }
+
+  /* ── REMARKS MODAL ── */
+  #remarks-modal .modal { width: 540px; }
+  #remarks-modal .modal-badge { background: var(--accent-glow); color: var(--accent); border-color: rgba(56,139,253,0.3); }
+  #remarks-modal textarea {
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    line-height: 1.65;
+    padding: 10px 12px;
+    outline: none;
+    resize: vertical;
+    min-height: 140px;
+    transition: border-color 0.2s;
+  }
+  #remarks-modal textarea:focus { border-color: var(--accent); }
+  #remarks-modal textarea::placeholder { color: var(--text-dim); font-style: italic; }
+  .remarks-save-btn { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  .remarks-save-btn:hover { background: #0757ba; border-color: #0757ba; color: #fff; }
+
+  /* ── ESCALATION TABLE ── */
+  .escalation-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .escalation-table th {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    padding: 8px 14px;
+    text-align: left;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+  }
+  .escalation-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    vertical-align: top;
+  }
+  .escalation-table tr:last-child td { border-bottom: none; }
+  .badge-critical {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 3px;
+    background: rgba(248,81,73,0.12);
+    color: var(--critical);
+    border: 1px solid rgba(248,81,73,0.3);
+    white-space: nowrap;
+  }
+  .badge-major {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 3px;
+    background: rgba(210,153,34,0.12);
+    color: var(--major);
+    border: 1px solid rgba(210,153,34,0.3);
+    white-space: nowrap;
+  }
+
+  /* ── DO / DO NOT ── */
+  .do-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+  .do-col {
+    padding: 16px 20px;
+  }
+  .do-col + .do-col { border-left: 1px solid var(--border); }
+  .do-col h4 {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 12px;
+  }
+  .do-col.may h4 { color: var(--pass); }
+  .do-col.must-not h4 { color: var(--fail); }
+  .do-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.45;
+  }
+  .do-item:last-child { border-bottom: none; }
+  .do-icon { flex-shrink: 0; margin-top: 2px; font-size: 13px; }
+
+  /* ── SHIFT HANDOVER ── */
+  .handover-remarks-wrap {
+    padding: 16px 18px;
+  }
+  .handover-remarks-wrap label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: block;
+    margin-bottom: 8px;
+  }
+  .handover-remarks-wrap textarea {
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    padding: 10px 12px;
+    outline: none;
+    resize: vertical;
+    transition: border-color 0.2s;
+    line-height: 1.65;
+  }
+  .handover-remarks-wrap textarea:focus { border-color: var(--accent); }
+  .handover-remarks-wrap textarea::placeholder { color: var(--text-dim); font-style: italic; }
+
+  .yesno-group { display: flex; gap: 8px; flex-wrap: wrap; }
+  .yesno-label {
+    display: flex; align-items: center; gap: 4px; cursor: pointer;
+    font-family: var(--mono); font-size: 11px; color: var(--text-muted);
+    padding: 3px 8px; border-radius: 3px; border: 1px solid var(--border);
+    transition: all 0.15s;
+  }
+  .yesno-label input { display: none; }
+  .yesno-label:hover { border-color: var(--accent); color: var(--accent); }
+  .yesno-label:has(input:checked) { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+
+  /* ── SECTION WRAPPERS ── */
+  .section-wrapper { margin-bottom: 8px; }
+  .section-wrapper > h2 {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    padding: 24px 0 8px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .card-header {
+    padding: 12px 18px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .card-header h3 {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+  }
+  .card-header .dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  .dot-critical { background: var(--critical); box-shadow: 0 0 6px var(--critical); }
+  .dot-info     { background: var(--accent);   box-shadow: 0 0 6px var(--accent); }
+  .dot-warn     { background: var(--warn);      box-shadow: 0 0 6px var(--warn); }
+  .dot-pass     { background: var(--pass);      box-shadow: 0 0 6px var(--pass); }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    background: #1a7f37;
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 10px 18px;
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 999;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .btn.save {
+    background: #0969da;
+    border-color: #0969da;
+    color: #fff;
+    font-weight: 600;
+  }
+  .btn.save:hover { background: #0757ba; border-color: #0757ba; color: #fff; }
+  .btn.import {
+    background: var(--surface);
+    border-color: #6e40c9;
+    color: #6e40c9;
+    font-weight: 600;
+  }
+  .btn.import:hover { background: rgba(110,64,201,0.08); border-color: #6e40c9; color: #6e40c9; }
+
+  /* ── IMPORT MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    width: 480px;
+    max-width: 95vw;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+    overflow: hidden;
+  }
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-2);
+  }
+  .modal-header h3 { font-size: 14px; font-weight: 600; color: var(--text); }
+  .modal-header .modal-badge {
+    font-family: var(--mono); font-size: 10px; text-transform: uppercase;
+    letter-spacing: .1em; color: #6e40c9; background: rgba(110,64,201,0.08);
+    border: 1px solid rgba(110,64,201,0.25); padding: 2px 8px; border-radius: 3px;
+  }
+  .modal-close {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-muted); font-size: 18px; line-height: 1;
+    padding: 2px 6px; border-radius: 4px; transition: background 0.15s;
+  }
+  .modal-close:hover { background: var(--border); }
+  .modal-body { padding: 20px; }
+  .modal-body p { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.6; }
+  .modal-body strong { color: var(--text); }
+  .drop-zone {
+    border: 2px dashed var(--border); border-radius: 8px; padding: 32px 20px;
+    text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s;
+    background: var(--bg);
+  }
+  .drop-zone:hover, .drop-zone.dragover { border-color: #6e40c9; background: rgba(110,64,201,0.04); }
+  .drop-zone-icon { font-size: 28px; margin-bottom: 8px; }
+  .drop-zone-text { font-size: 13px; color: var(--text-muted); margin-bottom: 4px; }
+  .drop-zone-sub { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+  .drop-zone input[type="file"] { display: none; }
+  .modal-footer {
+    display: flex; gap: 8px; justify-content: flex-end;
+    padding: 14px 20px; border-top: 1px solid var(--border); background: var(--surface-2);
+  }
+  .import-preview {
+    margin-top: 14px; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 12px 14px; font-family: var(--mono); font-size: 12px;
+    color: var(--text-muted); display: none;
+  }
+  .import-preview.visible { display: block; }
+  .import-preview .preview-row {
+    display: flex; justify-content: space-between; padding: 3px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .import-preview .preview-row:last-child { border-bottom: none; }
+  .import-preview .preview-val { color: var(--text); font-weight: 500; }
+  .toast.error { background: #cf222e; }
+  .toast.info  { background: #6e40c9; }
+  @media print {
+    .toolbar, .header { position: static; }
+    .section-body { display: block !important; }
+    .chevron { display: none; }
+    body { background: white; color: black; }
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+  @media (max-width: 768px) {
+    .header { padding: 16px; }
+    .meta-grid, .toolbar, .main, .purpose-box { margin-left: 16px; margin-right: 16px; }
+    .do-grid { grid-template-columns: 1fr; }
+    .do-col + .do-col { border-left: none; border-top: 1px solid var(--border); }
+    .item-method { display: none; }
+    .radio-group { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="header-badge">Level 1 · Physical Inspection</div>
+      <h1><span>GB200</span> Core POD — Hardware Inspection Checklist</h1>
+      <div class="header-sub">Rev 2.0 · L1_Physical_Hardware_Inspection_Checklist_GB200_Core_POD</div>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-stats">Completed <span id="completed-count">0</span> / <span id="total-count">0</span> items</div>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- META FORM -->
+<div class="meta-grid">
+  <div class="meta-cell">
+    <label>Inspection Type</label>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <label class="yesno-label"><input type="checkbox" id="type-daily"> Daily</label>
+      <label class="yesno-label"><input type="checkbox" id="type-shift"> Shift Handover</label>
+      <label class="yesno-label"><input type="checkbox" id="type-alarm"> Post-Alarm</label>
+      <label class="yesno-label"><input type="checkbox" id="type-maint"> Post-Maintenance</label>
+    </div>
+  </div>
+  <div class="meta-cell"><label>Engineer Name</label><input id="meta-engineer" type="text" placeholder="Enter name"></div>
+  <div class="meta-cell"><label>Date / Time</label><input id="meta-datetime" type="datetime-local"></div>
+  <div class="meta-cell"><label>Data Hall / Zone</label><input id="meta-zone" type="text" placeholder="Zone ID"></div>
+  <div class="meta-cell"><label>Rack Row / POD</label><input id="meta-rack" type="text" placeholder="Row / POD"></div>
+  <div class="meta-cell"><label>Ticket Ref</label><input id="meta-ticket" type="text" placeholder="Ticket #"></div>
+  <div class="meta-cell"><label>Revision</label><input type="text" value="Rev 2.0" readonly style="color:var(--text-muted)"></div>
+</div>
+
+<!-- PURPOSE -->
+<div class="purpose-box">
+  <h3>Purpose & L1 Boundary</h3>
+  <p>This checklist is for Level 1 engineers performing physical walkthrough inspection in a GB200/Core POD data hall. The objective is to detect visible hardware, power, cooling, cabling, environmental, safety, and housekeeping abnormalities early.</p>
+  <p>L1 engineers shall <strong>observe, record, raise tickets, and escalate</strong>. Intrusive actions such as reseating modules, moving fibers, touching liquid cooling connections, or manipulating power cables require an approved MOP and authorization from the shift lead/L2.</p>
+</div>
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <button class="btn save" onclick="saveCSV()">⬇ Save &amp; Download CSV</button>
+  <button class="btn import" onclick="openImportModal()">⬆ Load CSV</button>
+  <button class="btn primary" onclick="expandAll()">Expand All</button>
+  <button class="btn" onclick="collapseAll()">Collapse All</button>
+  <button class="btn" onclick="markAllPass()">Mark All Pass</button>
+  <button class="btn" onclick="clearAll()">Clear All</button>
+  <button class="btn" onclick="window.print()">Print / Export</button>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">✓ CSV downloaded</div>
+
+<!-- IMPORT MODAL -->
+<div class="modal-overlay" id="import-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:10px">
+        <h3>Load Partial Inspection</h3>
+        <span class="modal-badge">Handover</span>
+      </div>
+      <button class="modal-close" onclick="closeImportModal()">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <p>Upload a CSV previously exported from this checklist. All filled fields &mdash; metadata, item statuses, remarks, and handover notes &mdash; will be restored. <strong>Unchecked items remain editable</strong> so the next engineer can continue.</p>
+      <div class="drop-zone" id="drop-zone" onclick="document.getElementById('csv-file-input').click()"
+           ondragover="event.preventDefault();this.classList.add('dragover')"
+           ondragleave="this.classList.remove('dragover')"
+           ondrop="handleDrop(event)">
+        <div class="drop-zone-icon">&#x1F4C2;</div>
+        <div class="drop-zone-text">Click to browse or drag &amp; drop a CSV file</div>
+        <div class="drop-zone-sub">Only CSV files exported from this checklist are supported</div>
+        <input type="file" id="csv-file-input" accept=".csv,text/csv" onchange="handleFileSelect(event)">
+      </div>
+      <div class="import-preview" id="import-preview"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeImportModal()">Cancel</button>
+      <button class="btn import" id="confirm-import-btn" onclick="confirmImport()" disabled style="opacity:0.5;cursor:not-allowed">Apply &amp; Load</button>
+    </div>
+  </div>
+</div>
+
+<!-- REMARKS MODAL -->
+<div class="modal-overlay" id="remarks-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:10px">
+        <h3 id="remarks-modal-title">Remark</h3>
+        <span class="modal-badge" id="remarks-modal-badge"></span>
+      </div>
+      <button class="modal-close" onclick="closeRemarksModal()">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <p>Enter your remark for this item — fault description, observed condition, ticket reference, or follow-up action. Press <strong>Ctrl+Enter</strong> to save.</p>
+      <textarea id="remarks-textarea" placeholder="e.g. Amber LED on slot 3, ticket #INC-12345 raised, awaiting L2 review…"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeRemarksModal()">Cancel</button>
+      <button class="btn remarks-save-btn" onclick="saveRemark()">Save Remark</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- INSPECTION SECTIONS -->
+<div id="sections-container"></div>
+
+<!-- ESCALATION -->
+<div style="margin-bottom:8px">
+  <h2 style="font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--text-muted);padding:24px 0 8px;border-bottom:1px solid var(--border);margin-bottom:12px;">Critical Findings Requiring Immediate Escalation</h2>
+  <div class="card">
+    <table class="escalation-table">
+      <thead><tr><th>Severity</th><th>Condition</th><th>Required Action</th></tr></thead>
+      <tbody id="escalation-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- DO / DO NOT -->
+<div style="margin-bottom:8px">
+  <h2 style="font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--text-muted);padding:8px 0 8px;border-bottom:1px solid var(--border);margin-bottom:12px;">L1 Engineer — Permitted vs Prohibited Actions</h2>
+  <div class="card">
+    <div class="do-grid">
+      <div class="do-col may">
+        <h4>✓ May Do</h4>
+        <div class="do-item"><span class="do-icon">✓</span><span>Perform visual inspection during assigned rounds</span></div>
+        <div class="do-item"><span class="do-icon">✓</span><span>Take photo evidence if site policy allows</span></div>
+        <div class="do-item"><span class="do-icon">✓</span><span>Record LED / alarm status without touching equipment</span></div>
+        <div class="do-item"><span class="do-icon">✓</span><span>Confirm alarm with NOC / monitoring team</span></div>
+        <div class="do-item"><span class="do-icon">✓</span><span>Raise ticket for all defects</span></div>
+        <div class="do-item"><span class="do-icon">✓</span><span>Close rack door only if no obstruction and permitted</span></div>
+        <div class="do-item"><span class="do-icon">✓</span><span>Remove loose packaging from walkway only if safe and permitted</span></div>
+      </div>
+      <div class="do-col must-not">
+        <h4>✗ Must Not Do</h4>
+        <div class="do-item"><span class="do-icon">✗</span><span>Do not unplug, reseat, or transfer power cable</span></div>
+        <div class="do-item"><span class="do-icon">✗</span><span>Do not reseat server, GPU tray, switch, PSU, fan, or module</span></div>
+        <div class="do-item"><span class="do-icon">✗</span><span>Do not touch liquid cooling hose, manifold, or fitting</span></div>
+        <div class="do-item"><span class="do-icon">✗</span><span>Do not silence CDU / PDU alarm without approval</span></div>
+        <div class="do-item"><span class="do-icon">✗</span><span>Do not move fiber cable without approved MOP</span></div>
+        <div class="do-item"><span class="do-icon">✗</span><span>Do not bypass access or escort process</span></div>
+        <div class="do-item"><span class="do-icon">✗</span><span>Do not acknowledge major alarm without escalation</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SHIFT HANDOVER -->
+<div style="margin-bottom:8px">
+  <h2 style="font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--text-muted);padding:8px 0 8px;border-bottom:1px solid var(--border);margin-bottom:12px;">Shift Handover Summary</h2>
+  <div class="card">
+    <div class="handover-remarks-wrap">
+      <label>Handover Remarks</label>
+      <textarea id="ho-remarks" rows="5" placeholder="Summary of findings, actions taken, tickets raised, follow-up items, next shift notes…"></textarea>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<script>
+const SECTIONS = [
+  {
+    num: "1",
+    title: "Data Hall Entry & Safety Condition",
+    items: [
+      { id:"1.1", desc:"Access card / biometric entry successful", method:"Verify normal access process" },
+      { id:"1.2", desc:"No unauthorized personnel inside data hall", method:"Visual inspection" },
+      { id:"1.3", desc:"PPE worn as required", method:"Safety shoes, ESD protection if required" },
+      { id:"1.4", desc:"No obstruction at access door / emergency exit", method:"Visual inspection" },
+      { id:"1.5", desc:"No water, oil, coolant, or foreign liquid on floor", method:"Visual inspection" },
+      { id:"1.6", desc:"No abnormal smell, burning smell, smoke, or haze", method:"Sensory check" },
+      { id:"1.7", desc:"No abnormal noise from racks, cooling equipment, or pumps", method:"Listen during walkthrough" },
+    ]
+  },
+  {
+    num: "2",
+    title: "Rack Physical Condition",
+    items: [
+      { id:"2.1", desc:"Rack doors are closed and secured", method:"Front and rear check" },
+      { id:"2.2", desc:"Rack door locks / handles are not damaged", method:"Visual inspection" },
+      { id:"2.3", desc:"Rack is properly aligned and stable", method:"Visual inspection only" },
+      { id:"2.4", desc:"No loose panels, covers, or blanking plates", method:"Visual inspection" },
+      { id:"2.5", desc:"Rack labels are present and readable", method:"Check rack ID / row / POD label" },
+      { id:"2.6", desc:"No signs of impact, dents, or physical damage", method:"Visual inspection" },
+      { id:"2.7", desc:"No unauthorized items stored on or inside rack", method:"Visual inspection" },
+    ]
+  },
+  {
+    num: "3",
+    title: "GB200 Compute Rack / Server Hardware",
+    items: [
+      { id:"3.1", desc:"GB200 rack component condition — server/tray LEDs normal, no fault indicator, all trays fully seated", method:"Check power, fault, and ID LEDs on all server trays — note any fault in remark" },
+      { id:"3.5", desc:"No missing server blanks, fillers, or air baffles", method:"Visual inspection" },
+      { id:"3.6", desc:"No signs of overheating near chassis", method:"Check smell, heat, discoloration" },
+      { id:"3.7", desc:"No abnormal vibration or noise from compute rack", method:"Observe and listen — note in remark if any" },
+      { id:"3.8", desc:"Asset tag / serial number label is visible", method:"Visual inspection" },
+    ]
+  },
+  {
+    num: "4",
+    title: "Core POD Network Hardware",
+    items: [
+      { id:"4.1", desc:"Network switch condition — power LEDs normal, no fault LED, unused ports capped", method:"Check all switches — note any abnormality in remark" },
+      { id:"4.8", desc:"No abnormal fan noise from switches", method:"Listen during inspection" },
+    ]
+  },
+  {
+    num: "5",
+    title: "Power Distribution Inspection",
+    items: [
+      { id:"5.1", desc:"PDU status — A/B feed powered, no alarm indication, load display normal if visible", method:"Check LED/display on PDU A and B — record reading if available" },
+      { id:"5.5", desc:"Power cables are fully seated and secured", method:"Visual inspection only" },
+      { id:"5.6", desc:"No loose, stretched, or hanging power cable", method:"Visual inspection" },
+      { id:"5.7", desc:"Power cable labels are present and readable", method:"Check A/B feed label" },
+      { id:"5.8", desc:"No signs of heat damage on plugs or cables", method:"Visual inspection" },
+    ]
+  },
+  {
+    num: "6",
+    title: "Liquid Cooling / CDU / Manifold Inspection",
+    items: [
+      { id:"6.1",  desc:"No coolant leak — check rack front/rear, drip tray, hose connections, fittings, and condensation", method:"Visual inspection — note any leaking or accumulation in remark" },
+      { id:"6.7",  desc:"CDU local display shows normal condition", method:"Visual inspection, record alarm if any" },
+      { id:"6.8",  desc:"No alarm LED / buzzer from CDU", method:"Visual / sound check" },
+      { id:"6.9",  desc:"CDU pump / fan sound is normal", method:"Listen for abnormal vibration/noise" },
+      { id:"6.10", desc:"Supply / return temperature appears normal, if visible", method:"Record reading if available" },
+      { id:"6.11", desc:"Supply / return pressure appears normal, if visible", method:"Record reading if available — contact DC for normal range" },
+      { id:"6.12", desc:"Leak detection rope / sensor is not displaced", method:"Visual inspection — contact DC for normal state guidance" },
+    ]
+  },
+  {
+    num: "7",
+    title: "Cable Management",
+    items: [
+      { id:"7.1", desc:"Front cable routing is neat and secured", method:"Visual inspection" },
+      { id:"7.2", desc:"Rear cable routing is neat and secured", method:"Visual inspection" },
+      { id:"7.3", desc:"Cable management arms are not obstructing airflow", method:"Visual inspection" },
+      { id:"7.4", desc:"Cables are not touching hot surfaces or sharp edges", method:"Visual inspection" },
+      { id:"7.5", desc:"No cable is under tension", method:"Visual inspection" },
+      { id:"7.6", desc:"Fiber and copper cables are separated where required", method:"Visual inspection" },
+      { id:"7.7", desc:"Cable labels match rack / port / device naming standard", method:"Spot check" },
+      { id:"7.8", desc:"No temporary or unknown cable found", method:"Visual inspection" },
+    ]
+  },
+  {
+    num: "8",
+    title: "Airflow / Containment / Blanking Panel",
+    items: [
+      { id:"8.1", desc:"Hot aisle / cold aisle condition is maintained", method:"Visual inspection" },
+      { id:"8.2", desc:"Blanking panels are installed in unused rack spaces", method:"Visual inspection" },
+      { id:"8.3", desc:"Brush panels are intact and properly fitted", method:"Visual inspection" },
+      { id:"8.4", desc:"No open gaps around cable entry points", method:"Visual inspection" },
+      { id:"8.5", desc:"Rack doors are not left open", method:"Visual inspection" },
+      { id:"8.6", desc:"No plastic sheet, packaging, or loose material blocking airflow", method:"Visual inspection" },
+      { id:"8.7", desc:"No abnormal hot spot felt during walkthrough", method:"Non-contact observation" },
+    ]
+  },
+  {
+    num: "9",
+    title: "Environmental Condition",
+    items: [
+      { id:"9.1", desc:"Data hall temperature appears within normal range", method:"Check local display / BMS if available" },
+      { id:"9.2", desc:"Data hall humidity appears within normal range", method:"Check display / BMS if available" },
+      { id:"9.3", desc:"No water under raised/non-raised floor area", method:"Visual inspection" },
+      { id:"9.4", desc:"No condensation on doors, panels, racks, pipes, or ceiling", method:"Visual inspection" },
+      { id:"9.5", desc:"No dust accumulation near racks or equipment", method:"Visual inspection" },
+      { id:"9.6", desc:"No loose packaging, cable tie cuttings, or debris", method:"Visual inspection" },
+      { id:"9.7", desc:"Environmental sensor is installed and not damaged", method:"Visual inspection" },
+    ]
+  },
+  {
+    num: "10",
+    title: "Fire Detection / Safety System Physical Check",
+    items: [
+      { id:"10.2", desc:"Fire extinguisher / clean agent area is accessible", method:"Visual inspection" },
+      { id:"10.3", desc:"Emergency exit route is clear", method:"Visual inspection" },
+      { id:"10.4", desc:"Manual call point is accessible", method:"Visual inspection" },
+      { id:"10.5", desc:"Fire suppression warning lights/signage visible", method:"Visual inspection" },
+      { id:"10.6", desc:"No combustible material stored inside data hall", method:"Visual inspection" },
+    ]
+  },
+  {
+    num: "11",
+    title: "Housekeeping & Cleanliness",
+    items: [
+      { id:"11.1", desc:"No cardboard, foam, plastic, or packaging left in data hall", method:"Visual inspection" },
+      { id:"11.2", desc:"No tools left on rack, floor, or cable tray", method:"Visual inspection" },
+      { id:"11.3", desc:"No food or drink inside data hall", method:"Visual inspection" },
+      { id:"11.4", desc:"Walkway is clean and unobstructed", method:"Visual inspection" },
+      { id:"11.5", desc:"ESD mat / floor condition is acceptable", method:"Visual inspection" },
+    ]
+  },
+  {
+    num: "12",
+    title: "Wrap-Up & Escalation Confirmation",
+    items: [
+      { id:"12.6", desc:"Any alarm or fault cross-checked with NOC / monitoring screen", method:"Confirm with monitoring team — note outcome in remark" },
+      { id:"12.7", desc:"Ticket raised for every abnormal condition found", method:"Jira / ticketing system" },
+    ]
+  },
+];
+
+const ESCALATION = [
+  { sev:"Critical", cond:"Coolant leak, water leak, or condensation near GB200 rack", action:"Escalate immediately; raise ticket; notify NOC, L2, and facility team" },
+  { sev:"Critical", cond:"Burning smell, smoke, spark, abnormal heat, or haze", action:"Stop inspection; leave unsafe area; escalate immediately" },
+  { sev:"Critical", cond:"CDU alarm, pump fault, abnormal pressure, or abnormal temperature", action:"Notify facility team and L2 immediately" },
+  { sev:"Critical", cond:"Rack PDU A/B feed failure or visible electrical damage", action:"Escalate to NOC, L2, and facility team" },
+  { sev:"Critical", cond:"Multiple server fault LEDs in same rack", action:"Escalate to L2/vendor support" },
+  { sev:"Critical", cond:"Core switch fault or link abnormality affecting POD", action:"Escalate to network/L2 support" },
+  { sev:"Major",    cond:"Missing blanking panels causing airflow issue", action:"Raise ticket and inform shift lead" },
+  { sev:"Major",    cond:"Loose or damaged fiber/power cable", action:"Do not touch; escalate" },
+  { sev:"Major",    cond:"Door left open or containment compromised", action:"Close only if authorized and safe; otherwise escalate" },
+  { sev:"Major",    cond:"Unauthorized person or material inside data hall", action:"Escalate to security/shift lead" },
+];
+
+// ── Remarks storage (keyed by item ID) ──
+const REMARKS = {};
+let _remarkItemId = null;
+
+function openRemarksModal(itemId, itemDesc) {
+  _remarkItemId = itemId;
+  document.getElementById('remarks-modal-title').textContent = itemDesc || `Item ${itemId}`;
+  document.getElementById('remarks-modal-badge').textContent = itemId;
+  document.getElementById('remarks-textarea').value = REMARKS[itemId] || '';
+  document.getElementById('remarks-modal').classList.add('open');
+  setTimeout(() => document.getElementById('remarks-textarea').focus(), 80);
+}
+
+function closeRemarksModal() {
+  document.getElementById('remarks-modal').classList.remove('open');
+  _remarkItemId = null;
+}
+
+function saveRemark() {
+  if (!_remarkItemId) return;
+  const text = document.getElementById('remarks-textarea').value;
+  REMARKS[_remarkItemId] = text;
+  _updateRemarkBtn(_remarkItemId, text);
+  closeRemarksModal();
+}
+
+function _updateRemarkBtn(itemId, text) {
+  const btn = document.getElementById(`remarks-btn-${itemId}`);
+  if (!btn) return;
+  if (text) {
+    btn.classList.add('has-remark');
+    btn.textContent = text.length > 55 ? text.slice(0, 55) + '…' : text;
+  } else {
+    btn.classList.remove('has-remark');
+    btn.textContent = 'Add remark…';
+  }
+}
+
+// Ctrl+Enter saves, Escape closes
+document.getElementById('remarks-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeRemarksModal();
+});
+document.addEventListener('keydown', function(e) {
+  if (!document.getElementById('remarks-modal').classList.contains('open')) return;
+  if (e.key === 'Escape') closeRemarksModal();
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) saveRemark();
+});
+
+// Build escalation table
+const escBody = document.getElementById('escalation-body');
+ESCALATION.forEach(e => {
+  const tr = document.createElement('tr');
+  const badgeClass = e.sev === 'Critical' ? 'badge-critical' : 'badge-major';
+  tr.innerHTML = `
+    <td><span class="${badgeClass}">${e.sev}</span></td>
+    <td style="color:var(--text)">${e.cond}</td>
+    <td style="color:var(--text-muted)">${e.action}</td>
+  `;
+  escBody.appendChild(tr);
+});
+
+// Build inspection sections
+const container = document.getElementById('sections-container');
+
+SECTIONS.forEach(sec => {
+  const el = document.createElement('div');
+  el.className = 'section';
+  el.id = `section-${sec.num}`;
+
+  const rows = sec.items.map(item => `
+    <tr>
+      <td class="item-num">${item.id}</td>
+      <td class="item-desc">${item.desc}</td>
+      <td class="item-method">${item.method}</td>
+      <td class="item-status">
+        <div class="radio-group">
+          <label class="radio-label pass"><input type="radio" name="status-${item.id}" value="pass" onchange="updateSection('${sec.num}'); updateProgress()"> Pass</label>
+          <label class="radio-label fail"><input type="radio" name="status-${item.id}" value="fail" onchange="updateSection('${sec.num}'); updateProgress()"> Fail</label>
+        </div>
+      </td>
+      <td><button class="remarks-btn" id="remarks-btn-${item.id}" onclick="openRemarksModal('${item.id}', '${item.desc.replace(/'/g,"\\'")}')">Add remark…</button></td>
+    </tr>
+  `).join('');
+
+  el.innerHTML = `
+    <div class="section-header" onclick="toggleSection('${sec.num}')">
+      <span class="section-num">${sec.num}</span>
+      <span class="section-title">${sec.title}</span>
+      <div class="section-summary" id="summary-${sec.num}">
+        <span style="color:var(--text-dim);font-size:11px">${sec.items.length} items</span>
+      </div>
+      <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="6,3 11,8 6,13"/>
+      </svg>
+    </div>
+    <div class="section-body">
+      <table class="items-table">
+        <thead><tr>
+          <th>No.</th>
+          <th>Inspection Item</th>
+          <th>Check Method</th>
+          <th>Status</th>
+          <th>Remarks</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+  container.appendChild(el);
+});
+
+// Update total count
+document.getElementById('total-count').textContent = SECTIONS.reduce((a,s)=>a+s.items.length, 0);
+
+function toggleSection(num) {
+  const el = document.getElementById(`section-${num}`);
+  el.classList.toggle('open');
+}
+
+function updateSection(num) {
+  const sec = SECTIONS.find(s => s.num === num);
+  let pass=0, fail=0;
+  sec.items.forEach(item => {
+    const checked = document.querySelector(`input[name="status-${item.id}"]:checked`);
+    if (checked) {
+      if (checked.value === 'pass') pass++;
+      else if (checked.value === 'fail') fail++;
+    }
+  });
+  const sumEl = document.getElementById(`summary-${num}`);
+  let pills = '';
+  if (pass > 0) pills += `<span class="pill pill-pass">✓ ${pass}</span>`;
+  if (fail > 0) pills += `<span class="pill pill-fail">✗ ${fail}</span>`;
+  if (!pills) pills = `<span style="color:var(--text-dim);font-size:11px">${sec.items.length} items</span>`;
+  sumEl.innerHTML = pills;
+
+  const secEl = document.getElementById(`section-${num}`);
+  secEl.classList.toggle('has-fail', fail > 0);
+}
+
+function updateProgress() {
+  const total = SECTIONS.reduce((a,s)=>a+s.items.length, 0);
+  let done = 0;
+  SECTIONS.forEach(sec => {
+    sec.items.forEach(item => {
+      if (document.querySelector(`input[name="status-${item.id}"]:checked`)) done++;
+    });
+  });
+  document.getElementById('completed-count').textContent = done;
+  document.getElementById('progress-fill').style.width = ((done/total)*100)+'%';
+}
+
+function expandAll() {
+  document.querySelectorAll('.section').forEach(el => el.classList.add('open'));
+}
+function collapseAll() {
+  document.querySelectorAll('.section').forEach(el => el.classList.remove('open'));
+}
+function markAllPass() {
+  SECTIONS.forEach(sec => {
+    sec.items.forEach(item => {
+      const r = document.querySelector(`input[name="status-${item.id}"][value="pass"]`);
+      if (r) r.checked = true;
+    });
+    updateSection(sec.num);
+  });
+  updateProgress();
+}
+function clearAll() {
+  SECTIONS.forEach(sec => {
+    sec.items.forEach(item => {
+      document.querySelectorAll(`input[name="status-${item.id}"]`).forEach(r => r.checked = false);
+      delete REMARKS[item.id];
+      _updateRemarkBtn(item.id, '');
+    });
+    updateSection(sec.num);
+  });
+  updateProgress();
+}
+
+function csvEscape(val) {
+  const s = String(val ?? '').replace(/"/g, '""');
+  return /[",\n\r]/.test(s) ? `"${s}"` : s;
+}
+
+function radioVal(name) {
+  const checked = document.querySelector(`input[name="${name}"]:checked`);
+  return checked ? checked.value : '';
+}
+
+function saveCSV() {
+  const rows = [];
+
+  // ── Section 1: Metadata
+  rows.push(['=== INSPECTION METADATA ===']);
+  rows.push(['Field', 'Value']);
+
+  const types = [];
+  if (document.getElementById('type-daily')?.checked) types.push('Daily');
+  if (document.getElementById('type-shift')?.checked) types.push('Shift Handover');
+  if (document.getElementById('type-alarm')?.checked) types.push('Post-Alarm');
+  if (document.getElementById('type-maint')?.checked) types.push('Post-Maintenance');
+
+  rows.push(['Inspection Type',    types.join(' | ') || '']);
+  rows.push(['Engineer Name',      document.getElementById('meta-engineer')?.value || '']);
+  rows.push(['Date / Time',        document.getElementById('meta-datetime')?.value || '']);
+  rows.push(['Data Hall / Zone',   document.getElementById('meta-zone')?.value || '']);
+  rows.push(['Rack Row / POD',     document.getElementById('meta-rack')?.value || '']);
+  rows.push(['Ticket Ref',         document.getElementById('meta-ticket')?.value || '']);
+  rows.push(['Revision',           'Rev 2.0']);
+  rows.push([]);
+
+  // ── Section 2: Inspection Items
+  rows.push(['=== INSPECTION ITEMS ===']);
+  rows.push(['Section No.', 'Section Title', 'Item No.', 'Inspection Item', 'Check Method', 'Status', 'Remarks']);
+
+  SECTIONS.forEach(sec => {
+    sec.items.forEach(item => {
+      const statusEl = document.querySelector(`input[name="status-${item.id}"]:checked`);
+      const status = statusEl ? statusEl.value.toUpperCase() : 'NOT CHECKED';
+      const remarks = REMARKS[item.id] || '';
+
+      rows.push([sec.num, sec.title, item.id, item.desc, item.method, status, remarks]);
+    });
+  });
+  rows.push([]);
+
+  // ── Section 3: Summary stats
+  let totalPass=0, totalFail=0, totalUnchecked=0;
+  SECTIONS.forEach(sec => {
+    sec.items.forEach(item => {
+      const el = document.querySelector(`input[name="status-${item.id}"]:checked`);
+      if (!el) { totalUnchecked++; }
+      else if (el.value==='pass') totalPass++;
+      else if (el.value==='fail') totalFail++;
+    });
+  });
+  rows.push(['=== SUMMARY ===']);
+  rows.push(['Total Items', SECTIONS.reduce((a,s)=>a+s.items.length,0)]);
+  rows.push(['Pass',        totalPass]);
+  rows.push(['Fail',        totalFail]);
+  rows.push(['Not Checked', totalUnchecked]);
+  rows.push([]);
+
+  // ── Section 4: Shift Handover
+  rows.push(['=== SHIFT HANDOVER ===']);
+  rows.push(['Field', 'Value']);
+  rows.push(['Handover Remarks', document.getElementById('ho-remarks')?.value || '']);
+
+  // ── Build CSV string
+  const csv = rows.map(row => row.map(csvEscape).join(',')).join('\r\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+
+  // ── Generate filename with date/engineer
+  const engineer = (document.getElementById('meta-engineer')?.value || 'engineer').replace(/\s+/g,'_');
+  const now = new Date().toISOString().slice(0,16).replace('T','_').replace(':','-');
+  const filename = `L1_Inspection_GB200_${engineer}_${now}.csv`;
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  showToast(`✓ Saved: ${filename}`);
+}
+
+// ══════════════════════════════════════════════
+//  IMPORT / LOAD CSV
+// ══════════════════════════════════════════════
+
+let pendingImportData = null;
+
+function openImportModal() {
+  document.getElementById('import-modal').classList.add('open');
+  document.getElementById('import-preview').classList.remove('visible');
+  document.getElementById('import-preview').innerHTML = '';
+  document.getElementById('csv-file-input').value = '';
+  const btn = document.getElementById('confirm-import-btn');
+  btn.disabled = true; btn.style.opacity = '0.5'; btn.style.cursor = 'not-allowed';
+  pendingImportData = null;
+}
+
+function closeImportModal() {
+  document.getElementById('import-modal').classList.remove('open');
+}
+
+document.getElementById('import-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeImportModal();
+});
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+}
+
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) processFile(file);
+}
+
+function processFile(file) {
+  if (!file.name.endsWith('.csv') && file.type !== 'text/csv') {
+    showToast('Only .csv files are supported', 'error');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = parseCSV(e.target.result);
+      if (!data) { showToast('Unrecognised CSV format', 'error'); return; }
+      pendingImportData = data;
+      renderPreview(data);
+      const btn = document.getElementById('confirm-import-btn');
+      btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer';
+    } catch(err) {
+      showToast('Failed to parse CSV: ' + err.message, 'error');
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function parseCSV(text) {
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+
+  function tokeniseRow(line) {
+    const fields = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') {
+        if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+        else inQ = !inQ;
+      } else if (c === ',' && !inQ) {
+        fields.push(cur); cur = '';
+      } else {
+        cur += c;
+      }
+    }
+    fields.push(cur);
+    return fields;
+  }
+
+  const lines = text.split(/\r?\n/);
+  const parsed = { meta: {}, items: {}, handover: {} };
+  let section = null;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    if (trimmed.startsWith('=== INSPECTION METADATA')) { section = 'meta'; continue; }
+    if (trimmed.startsWith('=== INSPECTION ITEMS'))    { section = 'items'; continue; }
+    if (trimmed.startsWith('=== SUMMARY'))             { section = 'summary'; continue; }
+    if (trimmed.startsWith('=== SHIFT HANDOVER'))      { section = 'handover'; continue; }
+    if (trimmed.startsWith('=== FINAL SIGN-OFF'))      { section = null; continue; }
+
+    const cols = tokeniseRow(trimmed);
+
+    if (section === 'meta') {
+      if (cols[0] === 'Field') continue;
+      parsed.meta[cols[0]] = cols[1] || '';
+    }
+    if (section === 'items') {
+      if (cols[0] === 'Section No.') continue;
+      const itemId = cols[2];
+      if (itemId) {
+        parsed.items[itemId] = { status: (cols[5] || '').toUpperCase(), remarks: cols[6] || '' };
+      }
+    }
+    if (section === 'handover') {
+      if (cols[0] === 'Field') continue;
+      parsed.handover[cols[0]] = cols[1] || '';
+    }
+  }
+
+  if (Object.keys(parsed.items).length === 0) return null;
+  return parsed;
+}
+
+function renderPreview(data) {
+  const itemCount = Object.keys(data.items).length;
+  const checkedCount = Object.values(data.items).filter(i => i.status && i.status !== 'NOT CHECKED').length;
+  const failCount    = Object.values(data.items).filter(i => i.status === 'FAIL').length;
+  const remarkCount  = Object.values(data.items).filter(i => i.remarks).length;
+
+  const previewEl = document.getElementById('import-preview');
+  previewEl.innerHTML = `
+    <div class="preview-row"><span>Engineer</span><span class="preview-val">${data.meta['Engineer Name'] || '—'}</span></div>
+    <div class="preview-row"><span>Date / Time</span><span class="preview-val">${data.meta['Date / Time'] || '—'}</span></div>
+    <div class="preview-row"><span>Zone / Rack</span><span class="preview-val">${data.meta['Data Hall / Zone'] || '—'} / ${data.meta['Rack Row / POD'] || '—'}</span></div>
+    <div class="preview-row"><span>Items in file</span><span class="preview-val">${itemCount}</span></div>
+    <div class="preview-row"><span>Already checked</span><span class="preview-val">${checkedCount} / ${itemCount}</span></div>
+    <div class="preview-row"><span>Failures recorded</span><span class="preview-val" style="color:${failCount>0?'#cf222e':'inherit'}">${failCount}</span></div>
+    <div class="preview-row"><span>Remarks present</span><span class="preview-val">${remarkCount}</span></div>
+  `;
+  previewEl.classList.add('visible');
+}
+
+function confirmImport() {
+  if (!pendingImportData) return;
+  const data = pendingImportData;
+
+  // ── Restore metadata
+  const typeMap = {
+    'Daily':             'type-daily',
+    'Shift Handover':    'type-shift',
+    'Post-Alarm':        'type-alarm',
+    'Post-Maintenance':  'type-maint',
+  };
+  const types = (data.meta['Inspection Type'] || '').split(' | ');
+  Object.values(typeMap).forEach(id => { const el = document.getElementById(id); if (el) el.checked = false; });
+  types.forEach(t => { const id = typeMap[t.trim()]; if (id) { const el = document.getElementById(id); if (el) el.checked = true; } });
+
+  const setVal = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
+  setVal('meta-engineer',  data.meta['Engineer Name']);
+  setVal('meta-datetime',  data.meta['Date / Time']);
+  setVal('meta-zone',      data.meta['Data Hall / Zone']);
+  setVal('meta-rack',      data.meta['Rack Row / POD']);
+  setVal('meta-ticket',    data.meta['Ticket Ref']);
+
+  // ── Restore item statuses and remarks
+  SECTIONS.forEach(sec => {
+    sec.items.forEach(item => {
+      const saved = data.items[item.id];
+      if (!saved) return;
+      const status = saved.status.toLowerCase();
+      if (['pass','fail'].includes(status)) {
+        const radio = document.querySelector(`input[name="status-${item.id}"][value="${status}"]`);
+        if (radio) radio.checked = true;
+      }
+      if (saved.remarks) {
+        REMARKS[item.id] = saved.remarks;
+        _updateRemarkBtn(item.id, saved.remarks);
+      }
+    });
+    updateSection(sec.num);
+  });
+  updateProgress();
+
+  // ── Restore handover remarks
+  setVal('ho-remarks', data.handover['Handover Remarks']);
+
+  closeImportModal();
+  const checked = Object.values(data.items).filter(i => i.status && i.status !== 'NOT CHECKED').length;
+  const total   = SECTIONS.reduce((a,s)=>a+s.items.length,0);
+  showToast(`✓ Loaded — ${checked}/${total} items restored`, 'info');
+}
+
+function showToast(msg, type) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.className = 'toast' + (type ? ' ' + type : '') + ' show';
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => toast.classList.remove('show'), 3500);
+}
+
+</script>
+</body>
+</html>
