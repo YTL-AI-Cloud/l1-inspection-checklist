@@ -18,6 +18,7 @@
     --text-dim: #afb8c1;
     --pass: #1a7f37;
     --fail: #cf222e;
+    --na: #57606a;
     --warn: #9a6700;
     --critical: #cf222e;
     --major: #9a6700;
@@ -268,6 +269,7 @@
   }
   .pill-pass { color: var(--pass); border-color: rgba(63,185,80,0.3); background: rgba(63,185,80,0.08); }
   .pill-fail { color: var(--fail); border-color: rgba(248,81,73,0.3); background: rgba(248,81,73,0.08); }
+  .pill-na   { color: var(--na);   border-color: rgba(139,148,158,0.3); background: rgba(139,148,158,0.06); }
   .chevron {
     width: 16px;
     height: 16px;
@@ -352,6 +354,8 @@
   .radio-label.pass:hover { border-color: var(--pass); color: var(--pass); background: rgba(63,185,80,0.08); }
   .radio-label.fail:has(input:checked),
   .radio-label.fail:hover { border-color: var(--fail); color: var(--fail); background: rgba(248,81,73,0.08); }
+  .radio-label.na:has(input:checked),
+  .radio-label.na:hover { border-color: var(--na); color: var(--na); background: rgba(139,148,158,0.06); }
 
   /* ── REMARKS BUTTON ── */
   .remarks-btn {
@@ -897,8 +901,6 @@ const SECTIONS = [
       { id:"3.1", desc:"GB200 rack component condition — server/tray LEDs normal, no fault indicator, all trays fully seated", method:"Check power, fault, and ID LEDs on all server trays — note any fault in remark" },
       { id:"3.5", desc:"No missing server blanks, fillers, or air baffles", method:"Visual inspection" },
       { id:"3.6", desc:"No signs of overheating near chassis", method:"Check smell, heat, discoloration" },
-      { id:"3.7", desc:"No abnormal vibration or noise from compute rack", method:"Observe and listen — note in remark if any" },
-      { id:"3.8", desc:"Asset tag / serial number label is visible", method:"Visual inspection" },
     ]
   },
   {
@@ -924,13 +926,8 @@ const SECTIONS = [
     num: "6",
     title: "Liquid Cooling / CDU / Manifold Inspection",
     items: [
-      { id:"6.1",  desc:"No coolant leak — check rack front/rear, drip tray, hose connections, fittings, and condensation", method:"Visual inspection — note any leaking or accumulation in remark" },
-      { id:"6.7",  desc:"CDU local display shows normal condition", method:"Visual inspection, record alarm if any" },
-      { id:"6.8",  desc:"No alarm LED / buzzer from CDU", method:"Visual / sound check" },
-      { id:"6.9",  desc:"CDU pump / fan sound is normal", method:"Listen for abnormal vibration/noise" },
-      { id:"6.10", desc:"Supply / return temperature appears normal, if visible", method:"Record reading if available" },
-      { id:"6.11", desc:"Supply / return pressure appears normal, if visible", method:"Record reading if available — contact DC for normal range" },
-      { id:"6.12", desc:"Leak detection rope / sensor is not displaced", method:"Visual inspection — contact DC for normal state guidance" },
+      { id:"6.1", desc:"No coolant leak — check rack front/rear, drip tray, hose connections, fittings, and condensation", method:"Visual inspection — note any leaking or accumulation in remark" },
+      { id:"6.7", desc:"CDU local display shows normal condition", method:"Visual inspection, record alarm if any" },
     ]
   },
   {
@@ -954,7 +951,6 @@ const SECTIONS = [
       { id:"8.1", desc:"Hot aisle / cold aisle condition is maintained", method:"Visual inspection" },
       { id:"8.2", desc:"Blanking panels are installed in unused rack spaces", method:"Visual inspection" },
       { id:"8.3", desc:"Brush panels are intact and properly fitted", method:"Visual inspection" },
-      { id:"8.4", desc:"No open gaps around cable entry points", method:"Visual inspection" },
       { id:"8.5", desc:"Rack doors are not left open", method:"Visual inspection" },
       { id:"8.6", desc:"No plastic sheet, packaging, or loose material blocking airflow", method:"Visual inspection" },
       { id:"8.7", desc:"No abnormal hot spot felt during walkthrough", method:"Non-contact observation" },
@@ -993,14 +989,6 @@ const SECTIONS = [
       { id:"11.3", desc:"No food or drink inside data hall", method:"Visual inspection" },
       { id:"11.4", desc:"Walkway is clean and unobstructed", method:"Visual inspection" },
       { id:"11.5", desc:"ESD mat / floor condition is acceptable", method:"Visual inspection" },
-    ]
-  },
-  {
-    num: "12",
-    title: "Wrap-Up & Escalation Confirmation",
-    items: [
-      { id:"12.6", desc:"Any alarm or fault cross-checked with NOC / monitoring screen", method:"Confirm with monitoring team — note outcome in remark" },
-      { id:"12.7", desc:"Ticket raised for every abnormal condition found", method:"Jira / ticketing system" },
     ]
   },
 ];
@@ -1096,6 +1084,7 @@ SECTIONS.forEach(sec => {
         <div class="radio-group">
           <label class="radio-label pass"><input type="radio" name="status-${item.id}" value="pass" onchange="updateSection('${sec.num}'); updateProgress()"> Pass</label>
           <label class="radio-label fail"><input type="radio" name="status-${item.id}" value="fail" onchange="updateSection('${sec.num}'); updateProgress()"> Fail</label>
+          <label class="radio-label na"><input type="radio" name="status-${item.id}" value="na" onchange="updateSection('${sec.num}'); updateProgress()"> N/A</label>
         </div>
       </td>
       <td><button class="remarks-btn" id="remarks-btn-${item.id}" onclick="openRemarksModal('${item.id}', '${item.desc.replace(/'/g,"\\'")}')">Add remark…</button></td>
@@ -1139,18 +1128,20 @@ function toggleSection(num) {
 
 function updateSection(num) {
   const sec = SECTIONS.find(s => s.num === num);
-  let pass=0, fail=0;
+  let pass=0, fail=0, na=0;
   sec.items.forEach(item => {
     const checked = document.querySelector(`input[name="status-${item.id}"]:checked`);
     if (checked) {
       if (checked.value === 'pass') pass++;
       else if (checked.value === 'fail') fail++;
+      else na++;
     }
   });
   const sumEl = document.getElementById(`summary-${num}`);
   let pills = '';
   if (pass > 0) pills += `<span class="pill pill-pass">✓ ${pass}</span>`;
   if (fail > 0) pills += `<span class="pill pill-fail">✗ ${fail}</span>`;
+  if (na > 0)   pills += `<span class="pill pill-na">— ${na}</span>`;
   if (!pills) pills = `<span style="color:var(--text-dim);font-size:11px">${sec.items.length} items</span>`;
   sumEl.innerHTML = pills;
 
@@ -1246,19 +1237,21 @@ function saveCSV() {
   rows.push([]);
 
   // ── Section 3: Summary stats
-  let totalPass=0, totalFail=0, totalUnchecked=0;
+  let totalPass=0, totalFail=0, totalNA=0, totalUnchecked=0;
   SECTIONS.forEach(sec => {
     sec.items.forEach(item => {
       const el = document.querySelector(`input[name="status-${item.id}"]:checked`);
       if (!el) { totalUnchecked++; }
       else if (el.value==='pass') totalPass++;
       else if (el.value==='fail') totalFail++;
+      else totalNA++;
     });
   });
   rows.push(['=== SUMMARY ===']);
   rows.push(['Total Items', SECTIONS.reduce((a,s)=>a+s.items.length,0)]);
   rows.push(['Pass',        totalPass]);
   rows.push(['Fail',        totalFail]);
+  rows.push(['N/A',         totalNA]);
   rows.push(['Not Checked', totalUnchecked]);
   rows.push([]);
 
@@ -1450,7 +1443,7 @@ function confirmImport() {
       const saved = data.items[item.id];
       if (!saved) return;
       const status = saved.status.toLowerCase();
-      if (['pass','fail'].includes(status)) {
+      if (['pass','fail','na'].includes(status)) {
         const radio = document.querySelector(`input[name="status-${item.id}"][value="${status}"]`);
         if (radio) radio.checked = true;
       }
