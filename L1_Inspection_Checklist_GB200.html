@@ -357,21 +357,52 @@
   .radio-label.na:has(input:checked),
   .radio-label.na:hover { border-color: var(--na); color: var(--na); background: rgba(139,148,158,0.06); }
 
-  .remarks-input {
-    width: 100%;
+  /* ── REMARKS BUTTON ── */
+  .remarks-btn {
     background: transparent;
     border: none;
     border-bottom: 1px dashed var(--border);
-    color: var(--text);
+    color: var(--text-dim);
     font-family: var(--sans);
     font-size: 12px;
+    font-style: italic;
     outline: none;
-    padding: 2px 4px;
-    transition: border-color 0.2s;
+    padding: 4px 6px;
+    transition: border-color 0.15s, background 0.15s;
     min-width: 120px;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 3px 3px 0 0;
+    display: block;
+    line-height: 1.45;
   }
-  .remarks-input:focus { border-color: var(--accent); border-style: solid; }
-  .remarks-input::placeholder { color: var(--text-dim); font-style: italic; }
+  .remarks-btn:hover { border-color: var(--accent); border-bottom-style: solid; background: var(--accent-glow); color: var(--accent); }
+  .remarks-btn.has-remark { color: var(--text); font-style: normal; border-color: var(--text-muted); border-bottom-style: solid; }
+  .remarks-btn.has-remark:hover { border-color: var(--accent); background: var(--accent-glow); }
+
+  /* ── REMARKS MODAL ── */
+  #remarks-modal .modal { width: 540px; }
+  #remarks-modal .modal-badge { background: var(--accent-glow); color: var(--accent); border-color: rgba(56,139,253,0.3); }
+  #remarks-modal textarea {
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    line-height: 1.65;
+    padding: 10px 12px;
+    outline: none;
+    resize: vertical;
+    min-height: 140px;
+    transition: border-color 0.2s;
+  }
+  #remarks-modal textarea:focus { border-color: var(--accent); }
+  #remarks-modal textarea::placeholder { color: var(--text-dim); font-style: italic; }
+  .remarks-save-btn { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  .remarks-save-btn:hover { background: #0757ba; border-color: #0757ba; color: #fff; }
 
   /* ── ESCALATION TABLE ── */
   .escalation-table {
@@ -799,6 +830,27 @@
   </div>
 </div>
 
+<!-- REMARKS MODAL -->
+<div class="modal-overlay" id="remarks-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:10px">
+        <h3 id="remarks-modal-title">Remark</h3>
+        <span class="modal-badge" id="remarks-modal-badge"></span>
+      </div>
+      <button class="modal-close" onclick="closeRemarksModal()">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <p>Enter your remark for this item — fault description, observed condition, ticket reference, or follow-up action. Press <strong>Ctrl+Enter</strong> to save.</p>
+      <textarea id="remarks-textarea" placeholder="e.g. Amber LED on slot 3, ticket #INC-12345 raised, awaiting L2 review…"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeRemarksModal()">Cancel</button>
+      <button class="btn remarks-save-btn" onclick="saveRemark()">Save Remark</button>
+    </div>
+  </div>
+</div>
+
 <!-- MAIN -->
 <div class="main">
 
@@ -1099,6 +1151,54 @@ const ESCALATION = [
   { sev:"Major",    cond:"Unauthorized person or material inside data hall", action:"Escalate to security/shift lead" },
 ];
 
+// ── Remarks storage (keyed by item ID) ──
+const REMARKS = {};
+let _remarkItemId = null;
+
+function openRemarksModal(itemId, itemDesc) {
+  _remarkItemId = itemId;
+  document.getElementById('remarks-modal-title').textContent = itemDesc || `Item ${itemId}`;
+  document.getElementById('remarks-modal-badge').textContent = itemId;
+  document.getElementById('remarks-textarea').value = REMARKS[itemId] || '';
+  document.getElementById('remarks-modal').classList.add('open');
+  setTimeout(() => document.getElementById('remarks-textarea').focus(), 80);
+}
+
+function closeRemarksModal() {
+  document.getElementById('remarks-modal').classList.remove('open');
+  _remarkItemId = null;
+}
+
+function saveRemark() {
+  if (!_remarkItemId) return;
+  const text = document.getElementById('remarks-textarea').value;
+  REMARKS[_remarkItemId] = text;
+  _updateRemarkBtn(_remarkItemId, text);
+  closeRemarksModal();
+}
+
+function _updateRemarkBtn(itemId, text) {
+  const btn = document.getElementById(`remarks-btn-${itemId}`);
+  if (!btn) return;
+  if (text) {
+    btn.classList.add('has-remark');
+    btn.textContent = text.length > 55 ? text.slice(0, 55) + '…' : text;
+  } else {
+    btn.classList.remove('has-remark');
+    btn.textContent = 'Add remark…';
+  }
+}
+
+// Ctrl+Enter saves, Escape closes
+document.getElementById('remarks-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeRemarksModal();
+});
+document.addEventListener('keydown', function(e) {
+  if (!document.getElementById('remarks-modal').classList.contains('open')) return;
+  if (e.key === 'Escape') closeRemarksModal();
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) saveRemark();
+});
+
 // Build escalation table
 const escBody = document.getElementById('escalation-body');
 ESCALATION.forEach(e => {
@@ -1132,7 +1232,7 @@ SECTIONS.forEach(sec => {
           <label class="radio-label na"><input type="radio" name="status-${item.id}" value="na" onchange="updateSection('${sec.num}'); updateProgress()"> N/A</label>
         </div>
       </td>
-      <td><input type="text" class="remarks-input" placeholder="Remarks…"></td>
+      <td><button class="remarks-btn" id="remarks-btn-${item.id}" onclick="openRemarksModal('${item.id}', '${item.desc.replace(/'/g,"\\'")}')">Add remark…</button></td>
     </tr>
   `).join('');
 
@@ -1226,6 +1326,8 @@ function clearAll() {
   SECTIONS.forEach(sec => {
     sec.items.forEach(item => {
       document.querySelectorAll(`input[name="status-${item.id}"]`).forEach(r => r.checked = false);
+      delete REMARKS[item.id];
+      _updateRemarkBtn(item.id, '');
     });
     updateSection(sec.num);
   });
@@ -1273,16 +1375,7 @@ function saveCSV() {
     sec.items.forEach(item => {
       const statusEl = document.querySelector(`input[name="status-${item.id}"]:checked`);
       const status = statusEl ? statusEl.value.toUpperCase() : 'NOT CHECKED';
-
-      // Find the remarks input for this item by its table row position
-      const allRemarkInputs = document.querySelectorAll('.remarks-input');
-      let remarks = '';
-      // Match by traversing: find the radio for this item, then get its row's remarks input
-      const radioInRow = document.querySelector(`input[name="status-${item.id}"]`);
-      if (radioInRow) {
-        const row = radioInRow.closest('tr');
-        if (row) remarks = row.querySelector('.remarks-input')?.value || '';
-      }
+      const remarks = REMARKS[item.id] || '';
 
       rows.push([sec.num, sec.title, item.id, item.desc, item.method, status, remarks]);
     });
@@ -1537,11 +1630,8 @@ function confirmImport() {
         if (radio) radio.checked = true;
       }
       if (saved.remarks) {
-        const radioEl = document.querySelector(`input[name="status-${item.id}"]`);
-        if (radioEl) {
-          const row = radioEl.closest('tr');
-          if (row) { const ri = row.querySelector('.remarks-input'); if (ri) ri.value = saved.remarks; }
-        }
+        REMARKS[item.id] = saved.remarks;
+        _updateRemarkBtn(item.id, saved.remarks);
       }
     });
     updateSection(sec.num);
