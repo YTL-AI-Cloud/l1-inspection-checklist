@@ -71,6 +71,8 @@ v2 is the recommended version for daily use.
 
 ## What v2 Changes (from field feedback)
 
+> Feedback source: [ASD-148](https://ytlaicloud.atlassian.net/jira/servicedesk/projects/ASD/queues/custom/389/ASD-148) — submitted by Taufiq
+
 - Granular LED/status items merged into single consolidated checks (sections 3, 4, 5, 6)
 - Items removed that L1 engineers cannot access (VESDA panel, waste bin)
 - Section 12 (alarm verification) removed — checks already covered in each section
