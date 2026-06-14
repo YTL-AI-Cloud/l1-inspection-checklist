@@ -6,6 +6,28 @@ A self-contained, offline-capable HTML checklist for Level 1 engineers performin
 
 ---
 
+## Screenshots
+
+### Overview
+![Overview](screenshots/01_overview.png)
+
+### Checklist Items — Pass / Fail / N/A
+![Checklist items with status buttons](screenshots/02_checklist_items.png)
+
+### Remarks Modal
+![Remarks popup modal](screenshots/03_remarks_modal.png)
+
+### CSV Import (Shift Handover)
+![CSV import modal](screenshots/04_import_modal.png)
+
+### Shift Handover Notes
+![Handover remarks section](screenshots/06_handover.png)
+
+### Mobile View
+![Mobile layout](screenshots/05_mobile_view.png)
+
+---
+
 ## Versions
 
 | File | Description | Items |
