@@ -2,7 +2,9 @@
 
 A self-contained, offline-capable HTML checklist for Level 1 engineers performing physical walkthrough inspections in a GB200/Core POD data hall.
 
-**Live:** https://ytl-ai-cloud.github.io/l1-inspection-checklist/
+**Live:**
+- v2 (recommended): https://ytl-ai-cloud.github.io/l1-inspection-checklist/L1_Inspection_Checklist_GB200_v2.html
+- v1 (original): https://ytl-ai-cloud.github.io/l1-inspection-checklist/L1_Inspection_Checklist_GB200.html
 
 ---
 
