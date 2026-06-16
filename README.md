@@ -35,7 +35,7 @@ A self-contained, offline-capable HTML checklist for Level 1 engineers performin
 | File | Description | Items |
 |---|---|---|
 | [L1_Inspection_Checklist_GB200.html](L1_Inspection_Checklist_GB200.html) | v1 — original 12-section checklist | 91 |
-| [L1_Inspection_Checklist_GB200_v2.html](L1_Inspection_Checklist_GB200_v2.html) | v2 — consolidated based on field feedback + Video Wall PC check | 65 |
+| [L1_Inspection_Checklist_GB200_v2.html](L1_Inspection_Checklist_GB200_v2.html) | v2 — consolidated based on field feedback + Video Wall PC check | 61 |
 
 v2 is the recommended version for daily use.
 
