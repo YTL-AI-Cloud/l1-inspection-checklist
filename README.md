@@ -35,7 +35,7 @@ A self-contained, offline-capable HTML checklist for Level 1 engineers performin
 | File | Description | Items |
 |---|---|---|
 | [L1_Inspection_Checklist_GB200.html](L1_Inspection_Checklist_GB200.html) | v1 — original 12-section checklist | 91 |
-| [L1_Inspection_Checklist_GB200_v2.html](L1_Inspection_Checklist_GB200_v2.html) | v2 — consolidated based on field feedback | 53 |
+| [L1_Inspection_Checklist_GB200_v2.html](L1_Inspection_Checklist_GB200_v2.html) | v2 — consolidated based on field feedback + Video Wall PC check | 65 |
 
 v2 is the recommended version for daily use.
 
@@ -73,10 +73,11 @@ v2 is the recommended version for daily use.
 
 > Feedback source: [ASD-148](https://ytlaicloud.atlassian.net/jira/servicedesk/projects/ASD/queues/custom/389/ASD-148) — submitted by Taufiq
 
-- Granular LED/status items merged into single consolidated checks (sections 3, 4, 5, 6)
+- Granular LED/status items merged into single consolidated checks (sections 4, 5, 6, 7)
 - Items removed that L1 engineers cannot access (VESDA panel, waste bin)
-- Section 12 (alarm verification) removed — checks already covered in each section
+- Alarm verification section removed — checks already covered in each section
 - Shift Handover simplified to a single Handover Remarks field
+- **Section 1 — Video Wall PC & Display Status** added as top priority: confirms the NOC/monitoring video wall PC is powered on, displaying correctly, and configured to the latest approved requirement every shift
 - Final Sign-Off section removed
 
 ---
